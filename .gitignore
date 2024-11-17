@@ -1,0 +1,7 @@
+
+# temporary .gitlab cicd
+.gitlab-ci.yml
+
+# prod.tfvars
+prod.tfvars
+

@@ -8,11 +8,8 @@ resource "aws_instance" "test_instance" {
     instance_type = var.instance_type
     subnet_id = var.public_subnet      
     security_groups = [var.public_sg] # var.public_sg
-
-    root_block_device {  
-      encrypted = true
-    }
     key_name = "terraform-aws"
+
     tags = {
         Name = "web_${var.environment}"
     }
@@ -25,12 +22,6 @@ resource "aws_instance" "monitoring" {
     instance_type = var.instance_type
     subnet_id = var.monitor_subnet
     security_groups = [var.monitor_sg] # var.monitor_sg
-    root_block_device {
-      encrypted = true #scan security 
-    }
-    metadata_options {
-     http_tokens = "required"
-    }  
     key_name = "terraform-aws"
 
     tags = {

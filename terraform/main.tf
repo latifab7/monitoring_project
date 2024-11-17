@@ -18,5 +18,6 @@ module "web" {
 module "security" {
   source = "./security"    
   vpc_id = module.vpc.vpc_id
-  trusted_ip = ""
+  trusted_ip = "0.0.0.0/0"
 }
+

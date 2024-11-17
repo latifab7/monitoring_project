@@ -76,7 +76,7 @@ resource "aws_route_table_association" "publicRTlink" {
 }
 
 # route table association to monitor subnet
-resource "aws_route_table_association" "publicRTlink" {
+resource "aws_route_table_association" "monitorRTlink" {
   subnet_id = aws_subnet.monitor_subnet.id #associate to monitor subnet
   route_table_id = aws_route_table.monitor_routetable.id
 }

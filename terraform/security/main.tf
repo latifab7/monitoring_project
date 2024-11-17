@@ -66,6 +66,7 @@ resource "aws_security_group_rule" "public_ingress_https" {
   security_group_id = aws_security_group.public_sg.id
 }
 
+
 resource "aws_security_group_rule" "public_ingress_http" {
   type = "ingress"
   description = "Allow http traffic "
@@ -101,10 +102,30 @@ resource "aws_security_group_rule" "monitor_ingress_https" {
   security_group_id = aws_security_group.monitor_sg.id
 }
 
+resource "aws_security_group_rule" "monitor_ingress_ssh" {
+  type = "ingress"
+  description = "Allow ssh connection"
+  from_port = 22
+  to_port = 22
+  protocol = "tcp"
+  cidr_blocks = [var.trusted_ip]
+  security_group_id = aws_security_group.monitor_sg.id
+}
 
+resource "aws_security_group_rule" "monitor_ingress_metrics" {
+  type = "ingress"
+  description = "Allow metrics from test_instance"
+  from_port = 9100
+  to_port = 9100
+  protocol = "tcp"
+  source_security_group_id = aws_security_group.public_sg.id
+  security_group_id = aws_security_group.monitor_sg.id
+}
+
+# Port 80 must be open temporary for ssl certificate validation , once validate close this port 
 resource "aws_security_group_rule" "monitor_ingress_http" {
   type = "ingress"
-  description = "allow traffic for ssh certificate validation " # to delete once ssl certif is approuved
+  description = "allow traffic for ssh certificate validation " 
   from_port = 80
   to_port = 80
   protocol = "tcp"
@@ -112,13 +133,14 @@ resource "aws_security_group_rule" "monitor_ingress_http" {
   security_group_id = aws_security_group.monitor_sg.id
 }
 
+
 # to disable if nginx configuration works
 resource "aws_security_group_rule" "monitor_ingress_prometheus" {
   type = "ingress"
   description = "Allow prometheus access"                
-  from_port = 9090                  # try to configure via nginx for better safety
+  from_port = 9090                 
   to_port = 9090
-  protocol = "tcp"
+  protocol = "tcp"                                                                              
   cidr_blocks = [var.trusted_ip]
   security_group_id = aws_security_group.monitor_sg.id
 }

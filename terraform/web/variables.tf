@@ -4,13 +4,13 @@
 
 
 variable "public_sg" {
-  description = "securtity group's id for our test_instance"
-  type = string
+    description = "securtity group's id for our test_instance"
+    type = string
 }
 
 variable "monitor_sg" {
-  description = "security group's id for our monitor instance"
-  type = string
+    description = "security group's id for our monitor instance"
+    type = string
 }
 
 variable "public_subnet" {
@@ -31,7 +31,7 @@ variable "monitor_subnet" {
 variable "instance_image" {
     description = "Image Id "
     type = string
-    default = "ami-0efc5833b9d584374"
+    default = "ami-01eb696891a3b3bcf"
 }
 
 variable "instance_type" {
