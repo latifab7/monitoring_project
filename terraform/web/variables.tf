@@ -31,7 +31,7 @@ variable "monitor_subnet" {
 variable "instance_image" {
     description = "Image Id "
     type = string
-    default = "ami-01eb696891a3b3bcf"
+    default = "ami-0359cb6c0c97c6607"
 }
 
 variable "instance_type" {

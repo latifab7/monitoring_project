@@ -1,6 +1,6 @@
 ---
-- hosts: test_instance # our ec2
-  become: yes
+- hosts: test_instance 
+  become: true
   remote_user: admin
   
   tasks:

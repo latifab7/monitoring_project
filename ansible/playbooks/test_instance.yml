@@ -5,27 +5,20 @@
   remote_user: admin
   become: true
   vars:   
-    domain_name : "{{ lookup('env', 'DOMAIN_NAME_FRONT') }}" #will change with pre/production env
+    domain_name : "test.istla.online" #"{{ lookup('env', 'DOMAIN_NAME_FRONT') }}" 
 
   tasks:
 
 # STEP 1 : UPDATE SYSTEM
 
-  - name: Copy updating script 
-    copy:
-      src: scripts/update_systeme.sh
-      dest: /tmp/update_system.sh
-      mode: '0755'
+  - name: update system 
+    ansible.builtin.apt:
+      update_cache : yes
 
-  - name: Execute update system using script
-    command: /tmp/update_system.sh
-
-
-# STEP 2 : INSTALL NGINX
-
+# STEP 2 : INSTALL NGinx
   - name: Copy nginx script to target
     copy:
-      src: scripts/setup_nginx.sh
+      src: ../scripts/setup_nginx.sh
       dest: /opt/setup_nginx.sh
       mode: '0755'
 
@@ -36,7 +29,7 @@
 
   - name: Copy custom HTML to replace default Nginx page
     copy:
-      src: files/index.html
+      src: ../files/index.html
       dest: /usr/share/nginx/html/index.html
       owner: www-data
       group: www-data
@@ -59,18 +52,17 @@
 
   - name: configure nginx default file with domain name 
     copy: 
-      dest: /etc/nginx/conf.d/front.conf
+      dest: /etc/nginx/conf.d/static_site.conf
       content: |
         server {
           listen 80;
           server_name {{ domain_name }};
 
+          root /usr/share/nginx/html;
+          index index.html
+
           location / {
-              proxy_pass http://localhost:4000;
-              proxy_set_header Host $host;
-              proxy_set_header X-Real-IP $remote_addr;
-              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-              proxy_set_header X-Forwarded-Proto $scheme;
+            try_files $uri $uri/ = 404   
           }
         }
 

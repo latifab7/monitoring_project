@@ -8,21 +8,20 @@
   hosts: monitoring
   remote_user: admin
   become: true
-  gather_facts: yes
+  gather_facts: true
+  vars:   
+    domain_name : "monitoring.istla.online" #"{{ lookup('env', 'DOMAIN_NAME_FRONT') }}" 
+
 
 
   tasks:
 
 # STEP 1 : UPDATE SYSTEM
 
-  - name: Copy updating script 
-    copy:
-      src: scripts/update_systeme.sh
-      dest: /tmp/update_system.sh
-      mode: '0755'
+  - name: update system 
+    ansible.builtin.apt:
+      update_cache : yes
 
-  - name: Execute update system using script
-    command: /tmp/update_system.sh
 
 # STEP 2 : INSTALL ALL DEPENDENCIES NEEDED FOR MONITORING P
 
@@ -133,11 +132,11 @@
 
   - name: configure nginx as reverse proxy for our monitoring
     copy: 
-      dest: /etc/nginx/conf.d/back.conf
+      dest: /etc/nginx/conf.d/monitor.conf
       content: |
         server {
           listen 80;
-          server_name monitor.istla.online ;
+          server_name {{ domain_name }} ;
 
           location / {
               proxy_pass http://localhost:3000;
@@ -146,12 +145,14 @@
               proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               proxy_set_header X-Forwarded-Proto $scheme;
           }
+
+
         }
 
 # add prometheus port 9090 to nginx 
 
   - name: obtain ssl certificate for our domain name 
-    command: certbot --nginx -d monitor.istla.online --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+    command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
 
   - name: restart nginx 
     systemd:

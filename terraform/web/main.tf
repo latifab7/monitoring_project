@@ -7,6 +7,7 @@ resource "aws_instance" "test_instance" {
     ami = var.instance_image
     instance_type = var.instance_type
     subnet_id = var.public_subnet      
+
     security_groups = [var.public_sg] # var.public_sg
     key_name = "terraform-aws"
 
@@ -66,5 +67,5 @@ resource "null_resource" "hosts" {
 # create ssh key to be attached to the ec2 instance 
 resource "aws_key_pair" "ssh-key" {
     key_name = "terraform-aws"
-    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCX1JCM6Zii0aXKA5hP8dnNA8NBCc6ihyeyjtM3igWIfDecVZPsNWvaQ7qrevTehvAJvt2qgCAdTIuI/nicjTZCje8KPg+v2OUbnB1MME7u8h4eANf16L2oSD66xo0Azpjahbrr0oFvGWL61cKgYyACcEvAhUsTgZGC6ZKatxOUb9cMRtnjtkpxycVOj0D5QASld2x6vBFbuA3YSRe7uLp+duZhZgxw2HxQ3CoIxZZIAfjQ7hDO6GEuLHAwMcnILqIZKyBTJSKrZbgRpGm/r/cPcOkkfjmpEonzfgwjefBsc6710pifTFiZXS6SsELpr/+nxYe90TNFpCfqzSO1dbbeffgoFI5t9UH21GBgEY/nOMjX++VdzUl/S58AR+CiutrPK1KtAWxpgaDQvpN/2v4B9Rq4OzmCxvZKXm0EG0/S/Wxag1qQJJGW5i+CA5hZqqp0pdbp8Ow4gzemLrOlXXhXqgc1bujd04RRBk4Meoy47qogVwq7sl47X7syF0Gjq2MHQUeZxOE6pP8breA8CTaNEftv8YXKPZslxKimLRQXXBeAqMXLiyGLU3wLSGRFwFc6ik0RVKJ/nUazagkZNPT01HpHkre+RbrKJ1W2E5kNJHui8DfGvhkL68FFIuTBL8YVPTwMLPFMADqeIqvgDw+oRywEUM+1JA3/pIqvpj8eaQ== engineer@debian"
+    public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC46Sxi9W+AwBvO9KS3u1QCetZt3SXbwgKdl8UyNXG9C1WBqluL3aWvTaIL3S2O16NXEsLqUG85+N7/sVWSbjiT0ctFGTet6Gv8E6q7t5mjVS0Fzxguls66Ua9xJ26ZsVlB7Tz5kWAK8dHvSsPEL8YmdL6kUCPkB6Ip9CmNMPK8nny8Oj/wUwIOnpo/LrnBwu8uKSf+1l0HC+k4eV7so6ZBrh16nsh8hGg6n0DglLQ1mogYswfKukxeau31cvS7gMFf7JQ2UIGOgZ1lRZAMtxNXWMkc4PqCrT5CJMmkk8Q5Zx+s3NCc+AYm+J+/cPC7Wv6o5EPp49ZoBc8qmoTIui0GbLoOFHo+gwBhsIfOY7scNm40Ac9EMPwcWz9E35c+kZMtxUYTCQ8r63pAD3ps7kj2E8w/cMWJ1B4hoVtgQlvY7+fDUb+kztFXsGM1lux4d4pTuMg5wA7PNOdRmyGbO0AG1KuyRol0hIG+5vtPz3XmIHsFQmZ7aKTU+GtWrjZtTn30siX08krL+IZVCGVbUa2zPaScCRfqOpssxMnREIwv5+3imiiFWDx02sK5EdcWLAQSzLPJ69OXUK4udiyoIlCIHiD6/AAY9cN4xv6fpNEylth4W4fQnsQQxbOQJ65XnpPuj93Y0wpgRGw0p0uBOtQaljkGpJ2dG8aLYLaR0UuwBw== latifa@debian"
 }

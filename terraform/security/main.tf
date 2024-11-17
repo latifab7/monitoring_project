@@ -14,7 +14,7 @@ resource "aws_security_group" "public_sg" {
     description = "allow all traffic out"
     from_port = 0
     to_port = 0
-    protocol = "tcp"
+    protocol = "-1"
     cidr_blocks = [ "0.0.0.0/0" ]
   }
   tags = {
@@ -32,7 +32,7 @@ resource "aws_security_group" "monitor_sg" {
     description = "allow all traffic out"
     from_port = 0
     to_port = 0
-    protocol = "tcp"
+    protocol = "-1"
     cidr_blocks = [ "0.0.0.0/0" ]
   }
 
@@ -115,8 +115,8 @@ resource "aws_security_group_rule" "monitor_ingress_ssh" {
 resource "aws_security_group_rule" "monitor_ingress_metrics" {
   type = "ingress"
   description = "Allow metrics from test_instance"
-  from_port = 9100
-  to_port = 9100
+  from_port = var.metrics_port
+  to_port = var.metrics_port
   protocol = "tcp"
   source_security_group_id = aws_security_group.public_sg.id
   security_group_id = aws_security_group.monitor_sg.id
