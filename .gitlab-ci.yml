@@ -1,0 +1,85 @@
+default:      
+  image:
+    name: hashicorp/terraform
+    entrypoint : [""]        
+  cache:    
+    - key: $CI_PIPELINE_ID-terraform-cache-file 
+      paths: 
+        - ./terraform/.terraform/
+        - ./terraform/.terraform.lock.hcl 
+
+# global variables
+variables:            
+    AWS_ACCES_KEY : ${AWS_ACCESS_KEY_ID}
+    AWS_SECRET_KEY : ${AWS_SECRET_ACCESS_KEY}
+    ANSIBLE_HOST_KEY_CHECKING : "False"  # bypass verification hosts
+
+stages: 
+  - intialize_infra
+  - deploy_infra
+  - configure_instances
+  - destroy-infra
+
+
+infra_initialisation:
+  stage: initialize_infra
+  before_script:
+    - cd ./terraform/
+  script:
+    - terraform init 
+
+
+infra_validation:
+  stage: initialize_infra
+  before_script:
+    - cd ./terraform/
+  script:
+    - terraform validate
+
+
+infra_apply: 
+  stage: deploy_infra
+  before_script:
+    - cd ./terraform/
+  script:
+    - terraform apply -auto-approve
+  artifacts:
+    name: "${CI_PROJECT_NAME}-${CI_JOB_ID}"
+    paths:
+      - ./ansible/hosts  #get the host file for our ansible deployment job
+ 
+
+deploy_monitoring:
+  needs: 
+    - infra_apply
+  image: 
+    name: alpinelinux/ansible 
+    entrypoint: [""]
+  stage: configure_instances
+  before_script:
+    - cd ./ansible/
+  script:
+    - eval $(ssh-agent -s) #run agent to access to load ssh
+    - chmod 400 "$SSH_PRIVATE_KEY"  
+    - ssh-add "$SSH_PRIVATE_KEY" 
+    - mkdir -p ~/.ssh
+    - chmod 400 ~/.ssh 
+    - ansible-playbook -i hosts ./playbooks/test_instance.yml
+  dependencies:
+    - infra_apply
+  cache: []
+  when: manual
+  allow_failure: true 
+
+#ONLY IN MANUAL !
+terraform_destroy: # terraform.tfstate from cache to destroy
+  when: manual
+  stage: destroy-infra
+  before_script:
+    - cd ./terraform/
+  script:
+    - terraform destroy -auto-approve 
+
+
+
+

@@ -1,0 +1,68 @@
+---
+- hosts: test_instance # our ec2
+  become: yes
+  remote_user: admin
+  
+  tasks:
+
+# STEP 1 : INSTALL AND START NODE_EXPORTER
+    - name: Install dependencies on our app instances
+      apt: 
+        name: "{{ item }}"
+        state: present
+      loop: 
+        - wget
+        - tar
+
+    - name: Download and install node exporter
+      shell: |
+        wget https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
+        tar -xvf node_exporter-1.5.0.linux-amd64.tar.gz  
+        mv node_exporter-1.5.0.linux-amd64/node_exporter /home/admin/
+      args: 
+        creates: /home/admin/node_exporter/node_exporter
+
+    - name: Create Node exporter service
+      copy: 
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node exporter
+          After=network.target  
+
+          [Service]
+          Type=simple
+          ExecStart=/home/admin/node_exporter/node_exporter
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start and enable Node exporter service
+      systemd:
+        name: node_exporter
+        enabled: yes
+        state: started
+
+# STEP 2: FIXING FIREWALL ISSUE FOR INSTANCES BLOCKING INPUT 9100
+
+      #   iptables -A INPUT -p tcp --dport 9100 -j ACCEPT
+    - name: fix iptables issue for port 9100 
+      ansible.builtin.iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 9100
+        jump: ACCEPT
+        state: present
+        table: filter 
+
+    - name: restart node_exporter manually 
+      shell: nohup ./node_exporter &
+      args:
+        chdir: /home/admin
+
+
+
+
+
+

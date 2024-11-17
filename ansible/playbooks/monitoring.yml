@@ -1,0 +1,161 @@
+---
+- import_playbook: install_node_exporter.yml
+
+# first run node_exporter playbook in front and back before executing main playbook
+# monitor depends on install_node_exporter success !
+
+- name: monitoring our test instance with grafana/prometheus
+  hosts: monitoring
+  remote_user: admin
+  become: true
+  gather_facts: yes
+
+
+  tasks:
+
+# STEP 1 : UPDATE SYSTEM
+
+  - name: Copy updating script 
+    copy:
+      src: scripts/update_systeme.sh
+      dest: /tmp/update_system.sh
+      mode: '0755'
+
+  - name: Execute update system using script
+    command: /tmp/update_system.sh
+
+# STEP 2 : INSTALL ALL DEPENDENCIES NEEDED FOR MONITORING P
+
+  - name: install all packages needed for monitoring
+    apt:
+      name: "{{ item }}" 
+      state: present
+    loop:       
+      - wget
+      - tar 
+      - apt-transport-https
+      - software-properties-common
+      - curl
+
+# STEP 3 : INSTALL PROMETHEUS 
+
+  - name: download and install prometheus 
+    shell: |
+      wget https://github.com/prometheus/prometheus/releases/download/v2.41.0/prometheus-2.41.0.linux-amd64.tar.gz
+      tar -xvf prometheus-2.41.0.linux-amd64.tar.gz  
+      mv prometheus-2.41.0.linux-amd64 /home/admin/prometheus
+    args:
+      creates: /home/admin/prometheus
+
+  - name: Create Prometheus service
+    copy: 
+      dest: /etc/systemd/system/prometheus.service
+      content: |  # metadata and dependences
+        [Unit]  
+        Description=Prometheus monitoring
+        Wants=network-online.target
+        After=network-online.target
+
+        [Service]
+        User=root 
+        ExecStart=/home/admin/prometheus/prometheus --config.file=/home/admin/prometheus/prometheus.yml
+        Restart=always
+
+        [Install]
+        WantedBy=multi-user.target
+
+  - name: start and enable prometheus
+    systemd:
+      name: prometheus
+      enabled: yes
+      state: started
+
+
+# STEP 4 : INSTALL GRAFANA 
+
+  - name: add grafana apt key 
+    apt_key:
+      url: https://packages.grafana.com/gpg.key
+      state: present
+
+  - name: add grafana apt repo 
+    apt_repository:
+      repo: "deb https://packages.grafana.com/oss/deb stable main"
+      state: present
+
+  - name: install grafana 
+    apt: 
+      name: grafana 
+      state: present 
+
+  - name: start and enable grafana 
+    systemd:
+      name: grafana-server
+      enabled: yes
+      state: started
+
+# STEP 5 : ADD FRONT END - BACKEND URL TO OUR PROMETHEUS CONFIG ( TO SCRAPE METRICS )
+
+
+  - name: configure Prometheus
+    copy:
+      dest: /home/admin/prometheus/prometheus.yml
+      content: |
+        global:
+          scrape_interval: 15s
+
+        scrape_configs:
+          - job_name: 'node_exporter'
+            static_configs:               
+              - targets:
+          {% for ip in groups['test_instance'] %}
+                - '{{ ip }}:9100'
+          {% endfor %}
+  
+  # dynamically get test_instance ip from host file to update our prometheus config file
+
+
+  - name: restart prometheus to apply news changes (important !!!)
+    systemd:
+      name: prometheus
+      state: restarted
+
+
+
+# STEP 6 : ADD SSL CERTIFICATE FOR OUR GRAFANA SERVICE
+  - name: Install Nginx and ssl
+    apt:
+      name: 
+        - nginx
+        - certbot
+        - python3-certbot-nginx
+      state: present
+
+  - name: configure nginx as reverse proxy for our monitoring
+    copy: 
+      dest: /etc/nginx/conf.d/back.conf
+      content: |
+        server {
+          listen 80;
+          server_name monitor.istla.online ;
+
+          location / {
+              proxy_pass http://localhost:3000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+        }
+
+# add prometheus port 9090 to nginx 
+
+  - name: obtain ssl certificate for our domain name 
+    command: certbot --nginx -d monitor.istla.online --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+
+  - name: restart nginx 
+    systemd:
+      name: nginx
+      state: reloaded
+
+

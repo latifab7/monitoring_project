@@ -1,0 +1,85 @@
+---
+
+- name: configure our test instance
+  hosts: test_instance
+  remote_user: admin
+  become: true
+  vars:   
+    domain_name : "{{ lookup('env', 'DOMAIN_NAME_FRONT') }}" #will change with pre/production env
+
+  tasks:
+
+# STEP 1 : UPDATE SYSTEM
+
+  - name: Copy updating script 
+    copy:
+      src: scripts/update_systeme.sh
+      dest: /tmp/update_system.sh
+      mode: '0755'
+
+  - name: Execute update system using script
+    command: /tmp/update_system.sh
+
+
+# STEP 2 : INSTALL NGINX
+
+  - name: Copy nginx script to target
+    copy:
+      src: scripts/setup_nginx.sh
+      dest: /opt/setup_nginx.sh
+      mode: '0755'
+
+  - name: Execute nginx installation 
+    command: /opt/setup_nginx.sh 
+
+# step 3 : REPLACE NGINX DEFAULT HTML BY OUR CUSTOM HTML
+
+  - name: Copy custom HTML to replace default Nginx page
+    copy:
+      src: files/index.html
+      dest: /usr/share/nginx/html/index.html
+      owner: www-data
+      group: www-data
+      mode: '0644'
+
+  - name: restart nginx 
+    systemd:
+      name: nginx
+      state: reloaded
+
+
+# STEP 4 :  SSL CERTIFICATE 
+
+  - name: Install ssl
+    apt:
+      name: 
+        - certbot
+        - python3-certbot-nginx
+      state: present
+
+  - name: configure nginx default file with domain name 
+    copy: 
+      dest: /etc/nginx/conf.d/front.conf
+      content: |
+        server {
+          listen 80;
+          server_name {{ domain_name }};
+
+          location / {
+              proxy_pass http://localhost:4000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+        }
+
+  - name: obtain ssl certificate fot https 
+    command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+
+  - name: restart nginx 
+    systemd:
+      name: nginx
+      state: reloaded
+
+
