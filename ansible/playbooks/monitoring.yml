@@ -1,35 +1,32 @@
 ---
-- import_playbook: install_node_exporter.yml
+# - import_playbook: install_node_exporter.yml
 
 # first run node_exporter playbook in front and back before executing main playbook
 # monitor depends on install_node_exporter success !
 
-- name: monitoring our test instance with grafana/prometheus
+- name: monitoring our app with grafana/prometheus
   hosts: monitoring
   remote_user: admin
   become: true
   gather_facts: true
   vars:   
-    domain_name : "monitoring.istla.online" #"{{ lookup('env', 'DOMAIN_NAME_FRONT') }}" 
-
+    domain_name : "watch.istla.online" #"{{ lookup('env', 'DOMAIN_NAME_FRONT') }}"
 
 
   tasks:
 
-# STEP 1 : UPDATE SYSTEM
+# STEP 1 : UPDATE OUR SYSTEM 
 
-  - name: update system 
-    ansible.builtin.apt:
-      update_cache : yes
+  - name: update system apt update
+    apt: update_cache=yes 
 
-
-# STEP 2 : INSTALL ALL DEPENDENCIES NEEDED FOR MONITORING P
+# STEP 2 : INSTALL ALL DEPENDENCIES WE NEED FOR OUR MONITORING PROGRAMS
 
   - name: install all packages needed for monitoring
     apt:
       name: "{{ item }}" 
       state: present
-    loop:       
+    loop:       # boucle en installant chaque dependences avec apt une a une 
       - wget
       - tar 
       - apt-transport-https
@@ -38,7 +35,7 @@
 
 # STEP 3 : INSTALL PROMETHEUS 
 
-  - name: download and install prometheus 
+  - name: download and install prometheus # download and extract prometheus binaires
     shell: |
       wget https://github.com/prometheus/prometheus/releases/download/v2.41.0/prometheus-2.41.0.linux-amd64.tar.gz
       tar -xvf prometheus-2.41.0.linux-amd64.tar.gz  
@@ -69,8 +66,7 @@
       enabled: yes
       state: started
 
-
-# STEP 4 : INSTALL GRAFANA 
+# # STEP 4 : INSTALL GRAFANA 
 
   - name: add grafana apt key 
     apt_key:
@@ -111,7 +107,7 @@
                 - '{{ ip }}:9100'
           {% endfor %}
   
-  # dynamically get test_instance ip from host file to update our prometheus config file
+  # dynamically get back and front ip from host file and update our prometheus config file
 
 
   - name: restart prometheus to apply news changes (important !!!)
@@ -132,7 +128,7 @@
 
   - name: configure nginx as reverse proxy for our monitoring
     copy: 
-      dest: /etc/nginx/conf.d/monitor.conf
+      dest: /etc/nginx/conf.d/back.conf
       content: |
         server {
           listen 80;
@@ -146,13 +142,18 @@
               proxy_set_header X-Forwarded-Proto $scheme;
           }
 
+          location /prometheus {
+              proxy_pass http://localhost:9090;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
 
         }
 
-# add prometheus port 9090 to nginx 
-
   - name: obtain ssl certificate for our domain name 
-    command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+    command: certbot --nginx -d {{ domain_name}} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
 
   - name: restart nginx 
     systemd:

@@ -50,28 +50,44 @@
         - python3-certbot-nginx
       state: present
 
-  - name: configure nginx default file with domain name 
-    copy: 
-      dest: /etc/nginx/conf.d/static_site.conf
-      content: |
-        server {
-          listen 80;
-          server_name {{ domain_name }};
+  - name: configure nginx as reverse proxy
+    template:
+      src: ../files/nginx_proxy.j2
+      dest: /etc/nginx/sites-available/{{ domain_name }}
 
-          root /usr/share/nginx/html;
-          index index.html
+  - name: restart nginx service 
+    command: systemctl restart nginx
 
-          location / {
-            try_files $uri $uri/ = 404   
-          }
-        }
+  - name: enable nginx configuration 
+    file: 
+      src: /etc/nginx/sites-available/{{domain_name}}
+      dest: /etc/nginx/sites-enabled/{{domain_name}}
+      state: link 
 
-  - name: obtain ssl certificate fot https 
-    command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+  - name: restart nginx service 
+    command: systemctl restart nginx
 
-  - name: restart nginx 
-    systemd:
-      name: nginx
-      state: reloaded
+  - name: Remove default nginx config 
+    file:
+      path: /etc/nginx/sites-enabled/default
+      state: absent 
+
+  - name: restart nginx service 
+    command: systemctl restart nginx
+
+# STEP 5 : OBTAIN SSL CERTIFICATE 
+
+  # - name: obtain ssl certificate fot https 
+  #   command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+
+  # - name: restart nginx 
+  #   systemd:
+  #     name: nginx
+  #     state: reloaded
+        
 
 
+
+
+
+# FILE TESTED AND OK !!!

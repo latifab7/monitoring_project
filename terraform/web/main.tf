@@ -12,7 +12,7 @@ resource "aws_instance" "test_instance" {
     key_name = "terraform-aws"
 
     tags = {
-        Name = "web_${var.environment}"
+        Name = "test_${var.environment}"
     }
 }
 

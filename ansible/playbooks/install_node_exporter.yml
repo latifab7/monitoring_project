@@ -17,10 +17,10 @@
     - name: Download and install node exporter
       shell: |
         wget https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
-        tar -xvf node_exporter-1.5.0.linux-amd64.tar.gz  
+        tar -xvf node_exporter-1.5.0.linux-amd64.tar.gz
         mv node_exporter-1.5.0.linux-amd64/node_exporter /home/admin/
       args: 
-        creates: /home/admin/node_exporter/node_exporter
+        creates: /home/admin/node_exporter
 
     - name: Create Node exporter service
       copy: 
@@ -28,11 +28,11 @@
         content: |
           [Unit]
           Description=Node exporter
-          After=network.target  
+          After=network.target.target  
 
           [Service]
           Type=simple
-          ExecStart=/home/admin/node_exporter/node_exporter
+          ExecStart=/home/admin/node_exporter
           Restart=always
 
           [Install]

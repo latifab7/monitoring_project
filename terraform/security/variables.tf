@@ -25,6 +25,6 @@ variable "metrics_port" {
 variable "https_port" {
     description = "https port"
     type = number 
-    default = 442           # change to 443
+    default = 443
   
 }
