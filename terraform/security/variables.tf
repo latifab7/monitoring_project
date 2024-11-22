@@ -28,3 +28,11 @@ variable "https_port" {
     default = 443
   
 }
+
+variable "prometheus" {
+    description = "prometheus port"
+    type = number 
+    default = 9090
+  
+}
+

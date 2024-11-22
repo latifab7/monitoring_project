@@ -66,7 +66,7 @@ resource "aws_security_group_rule" "public_ingress_https" {
   security_group_id = aws_security_group.public_sg.id
 }
 
-
+# Open temporary for ssl certbot certification . close once successful
 resource "aws_security_group_rule" "public_ingress_http" {
   type = "ingress"
   description = "Allow http traffic "
@@ -82,6 +82,16 @@ resource "aws_security_group_rule" "public_ingress_metrics" {
   description = "Allow Node exporter metrics collection from monitoring instance "
   from_port = var.metrics_port
   to_port = var.metrics_port
+  protocol = "tcp"
+  source_security_group_id = aws_security_group.monitor_sg.id # from monitor sg
+  security_group_id = aws_security_group.public_sg.id # attach to public sg
+}
+
+resource "aws_security_group_rule" "public_ingress_prometheus" {
+  type = "ingress"
+  description = "Allow access from prometheus "
+  from_port = var.prometheus
+  to_port = var.prometheus
   protocol = "tcp"
   source_security_group_id = aws_security_group.monitor_sg.id # from monitor sg
   security_group_id = aws_security_group.public_sg.id # attach to public sg
@@ -138,8 +148,8 @@ resource "aws_security_group_rule" "monitor_ingress_http" {
 resource "aws_security_group_rule" "monitor_ingress_prometheus" {
   type = "ingress"
   description = "Allow prometheus access"                
-  from_port = 9090                 
-  to_port = 9090
+  from_port = var.prometheus                
+  to_port = var.prometheus
   protocol = "tcp"                                                                              
   cidr_blocks = [var.trusted_ip]
   security_group_id = aws_security_group.monitor_sg.id
@@ -157,13 +167,4 @@ resource "aws_security_group_rule" "monitor_ingress_grafana" {
 }
 
 
-resource "aws_security_group_rule" "monitor_egress_metrics" {
-  type = "egress"
-  description = "allow outbound traffic for metrics scraping"
-  from_port = var.metrics_port
-  to_port = var.metrics_port
-  protocol = "tcp"
-  source_security_group_id = aws_security_group.public_sg.id
-  security_group_id = aws_security_group.monitor_sg.id
-}
 

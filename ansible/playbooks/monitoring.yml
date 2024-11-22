@@ -1,8 +1,9 @@
 ---
+
 # - import_playbook: install_node_exporter.yml
 
-# first run node_exporter playbook in front and back before executing main playbook
-# monitor depends on install_node_exporter success !
+
+
 
 - name: monitoring our app with grafana/prometheus
   hosts: monitoring
@@ -15,18 +16,18 @@
 
   tasks:
 
-# STEP 1 : UPDATE OUR SYSTEM 
+# STEP 1 : UPDATE SYSTEM 
 
   - name: update system apt update
     apt: update_cache=yes 
 
-# STEP 2 : INSTALL ALL DEPENDENCIES WE NEED FOR OUR MONITORING PROGRAMS
+# STEP 2 : INSTALL ALL DEPENDENCIES NEEDED
 
   - name: install all packages needed for monitoring
     apt:
       name: "{{ item }}" 
       state: present
-    loop:       # boucle en installant chaque dependences avec apt une a une 
+    loop:       
       - wget
       - tar 
       - apt-transport-https
@@ -89,7 +90,7 @@
       enabled: yes
       state: started
 
-# STEP 5 : ADD FRONT END - BACKEND URL TO OUR PROMETHEUS CONFIG ( TO SCRAPE METRICS )
+# STEP 5 : ADD TEST INSTANCE TO OUR PROMETHEUS CONFIG ( TO SCRAPE METRICS )
 
 
   - name: configure Prometheus
@@ -107,17 +108,16 @@
                 - '{{ ip }}:9100'
           {% endfor %}
   
-  # dynamically get back and front ip from host file and update our prometheus config file
 
-
-  - name: restart prometheus to apply news changes (important !!!)
+  - name: restart prometheus to apply news changes 
     systemd:
       name: prometheus
       state: restarted
 
 
 
-# STEP 6 : ADD SSL CERTIFICATE FOR OUR GRAFANA SERVICE
+# STEP 6 : NGINX AS A REVERSE PROXY . SSL CERTIFICATES
+
   - name: Install Nginx and ssl
     apt:
       name: 

@@ -15,7 +15,8 @@
     ansible.builtin.apt:
       update_cache : yes
 
-# STEP 2 : INSTALL NGinx
+# STEP 2 : INSTALL NGINX 
+
   - name: Copy nginx script to target
     copy:
       src: ../scripts/setup_nginx.sh
@@ -41,7 +42,7 @@
       state: reloaded
 
 
-# STEP 4 :  SSL CERTIFICATE 
+# STEP 4 :  NGINX CONFIG 
 
   - name: Install ssl
     apt:
@@ -77,17 +78,16 @@
 
 # STEP 5 : OBTAIN SSL CERTIFICATE 
 
-  # - name: obtain ssl certificate fot https 
-  #   command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+  - name: obtain ssl certificate fot https 
+    command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
 
-  # - name: restart nginx 
-  #   systemd:
-  #     name: nginx
-  #     state: reloaded
+  - name: restart nginx 
+    systemd:
+      name: nginx
+      state: reloaded
         
 
 
 
 
 
-# FILE TESTED AND OK !!!
