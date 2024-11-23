@@ -49,7 +49,7 @@ terraform_apply:
   artifacts:
     name: "${CI_PROJECT_NAME}-${CI_JOB_ID}"
     paths:
-      - hosts  #get the host file for our ansible deployment job
+      - ./terraform/hosts #get the host file for our ansible deployment job
  
 
 test_instance:
