@@ -5,7 +5,8 @@
   remote_user: admin
   become: true
   vars:   
-    domain_name : "test.istla.online" #"{{ lookup('env', 'DOMAIN_NAME_FRONT') }}" 
+    domain_name : "test.istla.online" 
+    email: "{{ lookup('env', 'EMAIL') }}"
 
   tasks:
 
@@ -14,6 +15,10 @@
   - name: update system 
     ansible.builtin.apt:
       update_cache : yes
+
+  - name: show private IP
+    debug: 
+      var: hostvars[inventory_hostname]['ansible_default_ipv4']
 
 # STEP 2 : INSTALL NGINX 
 
@@ -79,7 +84,7 @@
 # STEP 5 : OBTAIN SSL CERTIFICATE 
 
   - name: obtain ssl certificate fot https 
-    command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m latifaboulil@hotmail.fr
+    command: certbot --nginx -d {{ domain_name }} --non-interactive --agree-tos -m {{ email }}
 
   - name: restart nginx 
     systemd:
