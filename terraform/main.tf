@@ -18,6 +18,6 @@ module "web" {
 module "security" {
   source = "./security"    
   vpc_id = module.vpc.vpc_id
-  trusted_ip = "0.0.0.0/0"
+  trusted_ip = "0.0.0.0/0"  # here the cidr block of your professional/personal ip address
 }
 
