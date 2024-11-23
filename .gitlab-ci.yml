@@ -14,31 +14,30 @@ variables:
     AWS_SECRET_KEY : ${AWS_SECRET_ACCESS_KEY}
     ANSIBLE_HOST_KEY_CHECKING : "False"  # bypass verification hosts
 
-stages: 
-  - intialize_infra
-  - deploy_infra
-  - configure_instances
+stages:
+  - deploy-infrastructure
+  - configure-instances
   - destroy-infra
 
 
-infra_initialisation:
-  stage: initialize_infra
+terraform_init:
+  stage: deploy-infrastructure
   before_script:
     - cd ./terraform/
   script:
     - terraform init 
 
 
-infra_validation:
-  stage: initialize_infra
+terraform_validate:
+  stage: deploy-infrastructure
   before_script:
     - cd ./terraform/
   script:
     - terraform validate
 
 
-infra_apply: 
-  stage: deploy_infra
+terraform_apply: 
+  stage: deploy-infrastructure
   before_script:
     - cd ./terraform/
   script:
@@ -46,16 +45,16 @@ infra_apply:
   artifacts:
     name: "${CI_PROJECT_NAME}-${CI_JOB_ID}"
     paths:
-      - ./ansible/hosts  #get the host file for our ansible deployment job
+      - ../ansible/hosts  #get the host file for our ansible deployment job
  
 
-deploy_monitoring:
+test_instance:
   needs: 
-    - infra_apply
+    - terraform_apply
   image: 
     name: alpinelinux/ansible 
     entrypoint: [""]
-  stage: configure_instances
+  stage: configure-instances
   before_script:
     - cd ./ansible/
   script:
@@ -66,13 +65,43 @@ deploy_monitoring:
     - chmod 400 ~/.ssh 
     - ansible-playbook -i hosts ./playbooks/test_instance.yml
   dependencies:
-    - infra_apply
+    - terraform_apply
+  variables: 
+    EMAIL : "$EMAIL"
   cache: []
   when: manual
   allow_failure: true 
 
-#ONLY IN MANUAL !
-terraform_destroy: # terraform.tfstate from cache to destroy
+
+
+monitoring:
+  needs: 
+    - terraform_apply
+  image: 
+    name: alpinelinux/ansible 
+    entrypoint: [""]
+  stage: configure-instances
+  before_script:
+    - cd ./ansible/
+  script:
+    - eval $(ssh-agent -s) #run agent to access to load ssh
+    - chmod 400 "$SSH_PRIVATE_KEY"  
+    - ssh-add "$SSH_PRIVATE_KEY" 
+    - mkdir -p ~/.ssh
+    - chmod 400 ~/.ssh 
+    - ansible-playbook -i hosts ./playbooks/monitoring.yml
+  dependencies:
+    - terraform_apply
+  variables: 
+    EMAIL : "$EMAIL"
+    MONITOR_DNS : "$MONITOR_DOMAIN_NAME"
+  cache: []
+  when: manual
+  allow_failure: true 
+
+
+
+terraform_destroy: 
   when: manual
   stage: destroy-infra
   before_script:
