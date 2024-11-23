@@ -29,6 +29,8 @@ terraform_init:
 
 
 terraform_validate:
+  needs: 
+    - terraform_init
   stage: deploy-infrastructure
   before_script:
     - cd ./terraform/
@@ -37,6 +39,8 @@ terraform_validate:
 
 
 terraform_apply: 
+  needs: 
+    - terraform_validate
   stage: deploy-infrastructure
   before_script:
     - cd ./terraform/
@@ -45,7 +49,7 @@ terraform_apply:
   artifacts:
     name: "${CI_PROJECT_NAME}-${CI_JOB_ID}"
     paths:
-      - ../ansible/hosts  #get the host file for our ansible deployment job
+      - hosts  #get the host file for our ansible deployment job
  
 
 test_instance:
@@ -63,7 +67,7 @@ test_instance:
     - ssh-add "$SSH_PRIVATE_KEY" 
     - mkdir -p ~/.ssh
     - chmod 400 ~/.ssh 
-    - ansible-playbook -i hosts ./playbooks/test_instance.yml
+    - ansible-playbook -i ../terraform/hosts playbooks/test_instance.yml
   dependencies:
     - terraform_apply
   variables: 
@@ -89,7 +93,7 @@ monitoring:
     - ssh-add "$SSH_PRIVATE_KEY" 
     - mkdir -p ~/.ssh
     - chmod 400 ~/.ssh 
-    - ansible-playbook -i hosts ./playbooks/monitoring.yml
+    - ansible-playbook -i ../terraform/hosts playbooks/monitoring.yml
   dependencies:
     - terraform_apply
   variables: 
