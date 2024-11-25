@@ -15,6 +15,8 @@ Before starting, ensure you have the following:
 
 ## 3. Project Architecture
 
+![diagram](./assests/monitor.drawio.png)
+
 The project follows a modular architecture, organized into several key components to streamline infrastructure management, automation, and deployment.
 
 ```
@@ -27,22 +29,17 @@ monitoring_project/
 │   │   ├── nginx_monitoring_proxy.j2  
 │   │   └── nginx_proxy.j2       
 │   ├── scripts/                 
-│   └── playbooks/               
+│   └── playbooks/
+│   │   ├── ....            
 ├── assets/                      
 │   ├── ...              # Collection of images and screenshots for the project
 ├── terraform/                   
 │   ├── security/                
-│   │   ├── main.tf              
-│   │   ├── variables.tf         
-│   │   └── output.tf            
+│   │   ├── ...           
 │   ├── vpc/                     
-│   │   ├── main.tf              
-│   │   ├── variables.tf         
-│   │   └── output.tf            
+│   │   ├── ...          
 │   ├── web/                     
-│   │   ├── main.tf              
-│   │   ├── variables.tf         
-│   │   └── output.tf            
+│   │   ├── ...      
 │   ├── main.tf                  
 │   ├── provider.tf              
 │   └── variables.tf      
@@ -79,24 +76,57 @@ The infrastructure for this project is fully managed and provisioned using Terra
 
 6. Ansible Hosts File: To ensure the seamless configuration of the instances, an Ansible hosts file is generated dynamically. This is done using a null resource in Terraform, which creates the inventory file containing the necessary information to manage the instances with Ansible. This step is crucial for setting up the monitoring tools and automating system configuration.
 
-![hosts file](./assests/host-file.png)
+![hosts file](./assests/host-file1.png)
 
 7. Security Module: A strict security configuration is applied to the infrastructure using the security module. This includes defining security groups, which will be detailed later in the project.
 
 
 ## 5. Configuration Management with Ansible
 
+Ansible is used to automate the configuration of both the test_instance and monitor_instance. The setup consists of three playbooks:
 
+1. Configure Test Instance (test_instance.yml)
+This playbook is used to configure the test_instance, performing the following tasks:
+    * Deploy a static HTML file: The playbook uploads and sets up the static HTML page on the server.
+    * Install and configure Nginx: Nginx is installed and set to serve the static HTML file.
+    * Install SSL certificate: The playbook configures SSL to enable HTTPS for secure communication.
+
+2. Install Node Exporter (install_node_exporter.yml)
+This playbook installs Node Exporter on the test_instance to collect and expose system metrics, which are later scraped by Prometheus for monitoring purposes.
+
+3. Configure Monitor Instance (monitoring.yml)
+The third playbook configures the monitor_instance with the following steps:
+
+    * Install Prometheus and Grafana: Prometheus is set up to scrape metrics, and Grafana is installed to visualize the data.
+    * Dynamically configure the IP of the test_instance: The playbook retrieves the dynamically assigned IP of the test_instance using Ansible's inventory and configures Prometheus to scrape the metrics.
+    * Install and configure Nginx as a reverse proxy: Nginx is set up on the monitor_instance to proxy traffic and serve Grafana dashboards securely with SSL.
+    * Jinja2 templates are used to dynamically generate the Nginx configuration for reverse proxying.
+
+These playbooks ensure that both instances are properly configured, monitored, and secured, providing a fully automated environment for monitoring and data collection.
 
 ## 6. Monitoring Setup 
 
+The monitoring setup is integrated into the project using Prometheus and Grafana, both of which were installed and configured automatically via Ansible.
 
+Prometheus collects system metrics from the test_instance using Node Exporter. The dynamic retrieval of the test instance’s IP ensures Prometheus is always scraping the correct metrics.
+
+Grafana is used to visualize the data collected by Prometheus. Dashboards are configured to display real-time system performance, making it easy to monitor the health of the infrastructure.
+
+Nginx is set up as a reverse proxy for both Prometheus and Grafana, with SSL certificates to secure the communication.
+
+This setup provides a robust monitoring solution, allowing for ongoing tracking of system health and performance, while ensuring secure and accessible visualizations through Grafana.
+
+
+![node_exporter](./assests/node_exporter.png)
+![prometheus](./assests/prometheus-status.png)
+![monitor](./assests/grafana-dashboard.png)
 
 ## 7. CI/CD Workflow
 
-he GitLab CI/CD pipeline automates the deployment of infrastructure with Terraform and configures the instances using Ansible playbooks. Sensitive information is securely managed within GitLab CI/CD variables.
+The GitLab CI/CD pipeline automates the entire process of deploying infrastructure and configuring instances. By integrating Terraform for infrastructure provisioning and Ansible for instance configuration, the pipeline ensures fast, consistent, and repeatable deployments. This automation reduces manual effort, minimizes errors, and speeds up updates. Additionally, sensitive information is securely managed in GitLab CI/CD variables, ensuring that sensitive data is never exposed in the codebase.
 
 ![cicdworkflow](./assests/cicd-completed.png)
+![jobs](./assests/job-dependencies.png)
 
 ## 8. Security
 
@@ -118,7 +148,7 @@ To ensure secure communication between clients and the application, all web traf
 The monitoring web interface, as well as the test instance, both rely on secure HTTPS connections, ensuring data privacy and integrity.
 
 ![https](./assests/test-instance-https.png)
-![https](./assests/grafana-dashboard.png)
+![https](./assests/https.png)
 
 3. Environment Variables and Sensitive Information
 Sensitive information such as AWS credentials, the monitoring domain name, and other application secrets are never hard-coded in the infrastructure code or playbooks. Instead:
@@ -131,9 +161,14 @@ This method ensures that sensitive information is kept secure and is only access
 
 ## 9. Troubleshooting
 
-TO DO 
+* Issue
+During the setup, Prometheus was unable to scrape metrics from Node Exporter on the test_instance, even though the security groups were configured correctly.
 
-metrics couldnt be collected via the public IP adress in the prometheus configuration file
+* Cause
+Scraping metrics via the public IP was unreliable due to network latency, routing issues, and potential firewall restrictions between instances in different subnets. The private IP provided a more stable and direct connection within the same VPC
+
+* Solution
+To resolve the issue, I switched to using the private IP for communication between the instances. As the private IP was unknown initially, we leveraged Ansible’s gather_facts module to dynamically retrieve it. After obtaining the private IP, we updated the Prometheus configuration file to scrape metrics from it, which successfully resolved the problem.
 
 
 ## 10. Manual Steps
