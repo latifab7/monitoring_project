@@ -1,3 +1,7 @@
 # prod.tfvars
 prod.tfvars
 
+# terraform folder
+.terraform
+
+
